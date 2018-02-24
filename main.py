@@ -1,5 +1,5 @@
 import sys
-import controller
+from controller import Controller
 from const import *
 import start_screen
 import end_screen
@@ -11,7 +11,7 @@ pygame.init()
 pygame.mixer.init()
 pygame.mixer.set_num_channels(64)
 pygame.mixer.music.load("ambient.mp3")
-pygame.mixer.music.play()
+#pygame.mixer.music.play()
 
 pygame.display.set_caption('Gondola Tycoon 2018')
 
@@ -25,80 +25,82 @@ with open("nouns.txt") as F:
 map_choice = start_screen.draw_start_screen(MAINSURF)
 bg = pygame.image.load(map_choice + ".png").convert()
 bg = pygame.transform.scale(bg, (DISPLAY_WIDTH, DISPLAY_HEIGHT))
-ctrl = controller.Controller(MAINSURF)
+Controller.initialize(MAINSURF)
 if map_choice == "tokyo":
     station1 = Station((198, 162), MAINSURF, "Mount Keefer")
-    ctrl.entities.append(station1)
+    Controller.entities.append(station1)
 
     station2 = Station((920, 540), MAINSURF, "The Spire")
-    ctrl.entities.append(station2)
+    Controller.entities.append(station2)
 
     station3 = Station((161, 410), MAINSURF, "The Peaks")
-    ctrl.entities.append(station3)
+    Controller.entities.append(station3)
 
     track1 = Track(station1, station2, [(550, 250)], MAINSURF)
-    ctrl.entities.append(track1)
+    Controller.instance.entities.append(track1)
     station1.addTrack(track1)
 
     track2 = Track(station2, station3, [(500, 500)], MAINSURF)
-    ctrl.entities.append(track2)
+    Controller.instance.entities.append(track2)
     station2.addTrack(track2)
 
     track3 = Track(station3, station1, [], MAINSURF)
-    ctrl.entities.append(track3)
+    Controller.instance.entities.append(track3)
     station3.addTrack(track3)
     station3.addTrack(track3)
 
     track5 = Track(station1, station3, [], MAINSURF)
-    ctrl.entities.append(track5)
+    Controller.instance.entities.append(track5)
     station1.addTrack(track5)
 
     train1 = Train(station1, MAINSURF)
-    station1.receive(train1, ctrl)
-    ctrl.entities.append(train1)
+    station1.receive(train1)
+    Controller.instance.entities.append(train1)
 
     train2 = Train(station3, MAINSURF)
-    station3.receive(train2, ctrl)
+    station3.receive(train2)
 
-    ctrl.entities.append(train2)
+    Controller.instance.entities.append(train2)
 
-    selected_stations = []
+selected_stations = []
 
 if map_choice == "london":
     station1 = Station((382, 363), MAINSURF, "Wery's Pass")
-    ctrl.entities.append(station1)
+    Controller.instance.entities.append(station1)
 
     station2 = Station((783, 155), MAINSURF, "Johnny-Old Hill")
-    ctrl.entities.append(station2)
+    Controller.instance.entities.append(station2)
 
     station3 = Station((1040, 572), MAINSURF, "Piddlty Wellington Summmit")
-    ctrl.entities.append(station3)
+    Controller.instance.entities.append(station3)
 
     track1 = Track(station1, station2, [(420, 211)], MAINSURF)
-    ctrl.entities.append(track1)
+    Controller.instance.entities.append(track1)
     station1.addTrack(track1)
 
     track2 = Track(station2, station3, [(911, 402)], MAINSURF)
-    ctrl.entities.append(track2)
+    Controller.instance.entities.append(track2)
     station2.addTrack(track2)
 
     track3 = Track(station3, station1, [(660,623)], MAINSURF)
-    ctrl.entities.append(track3)
+    Controller.instance.entities.append(track3)
     station3.addTrack(track3)
     station3.addTrack(track3)
 
     track5 = Track(station1, station3, [], MAINSURF)
-    ctrl.entities.append(track5)
+    Controller.instance.entities.append(track5)
     station1.addTrack(track5)
 
     train1 = Train(station1, MAINSURF)
-    station1.receive(train1, ctrl)
-    ctrl.entities.append(train1)
+    station1.receive(train1, Controller.instance
+                     )
+    Controller.instance.entities.append(train1)
 
     train2 = Train(station3, MAINSURF)
-    station3.receive(train2, ctrl)
+    station3.receive(train2, Controller.instance
+                     )
 
-    ctrl.entities.append(train2)
+    Controller.instance.entities.append(train2)
 
     selected_stations = []
 
@@ -116,37 +118,50 @@ def draw_tooltip():
         tooltip["time"] -= 1
 
 
-def create_station(pos, surface, ctrl):
-    if ctrl.get_money() >= COST_OF_MOUNTAIN:
+def create_station(pos):
+    if Controller.instance.currentMoney >= COST_OF_MOUNTAIN:
         random_name = "Mount " + random.choice(nouns).capitalize()
-        new_station = Station(pos, surface, random_name)
-        ctrl.entities.insert(0, new_station)
-        ctrl.addMoney(-COST_OF_MOUNTAIN)
+        new_station = Station(pos, Controller.surface, random_name)
+        # insert at the front of list to get drawn first/at the bottom
+        Controller.entities.insert(0, new_station)
+        Controller.instance.addMoney(-COST_OF_MOUNTAIN)
+    # TODO move the death check to every tick....
     else:
         end_screen.draw_end_screen(MAINSURF)
 
 
-
-def create_track(start, end, breakpoints, surface=MAINSURF):
+def create_track(start, end, breakpoints):
+    surface = Controller.surface
     new_track = Track(start, end, [], surface)
-    ctrl.entities.append(new_track)
+    Controller.entities.append(new_track)
+    # add track to start station
     start.addTrack(new_track)
-
+    
+    # add return track TODO remove this feature
     new_track2 = Track(end, start, [], surface)
-    ctrl.entities.append(new_track2)
+    Controller.entities.append(new_track2)
+    # add track to end station
     end.addTrack(new_track2)
 
-def create_train(station, controller, surface=MAINSURF):
+
+def create_train(station, controller):
+    surface = Controller.surface
+    
+    # can only create train at a station with tracks
     if len(station.tracks) != 0:
-        new_train = Train(station, MAINSURF)
-        station.receive(new_train, controller)
+        new_train = Train(station, surface)
+        station.receive(new_train)
         controller.entities.append(new_train)
     else:
+        # TODO upgrade tooltip to something more sophisticated
         tooltip["msg"] = "Mountain not connected!"
         tooltip["pos"] = (station.x, station.y - 15)
         tooltip["time"] = 50
 
+
 def clear_selected_stations(select_list):
+    # TODO make all game object selectable
+    # TODO encapsulate selected behaviour there
     for station in select_list:
         station.color = BLUE
     del select_list[:]
@@ -156,7 +171,7 @@ while True:  # main game loop
     #MAINSURF.fill(WHITE)
     MAINSURF.blit(bg,(0, 0))
     draw_tooltip()
-    ctrl.tick()
+    Controller.tick()
 
     keys = pygame.key.get_pressed()
     
@@ -167,9 +182,9 @@ while True:  # main game loop
         
     if keys[K_b]:
         if len(selected_stations)==1:
-            if ctrl.currentMoney >= TRAIN_COST:
-                ctrl.addMoney(-TRAIN_COST)
-                create_train(selected_stations[0], ctrl)
+            if Controller.instance.currentMoney >= TRAIN_COST:
+                Controller.instance.addMoney(-TRAIN_COST)
+                create_train(selected_stations[0], Controller.instance)
                 clear_selected_stations(selected_stations)
             else:
                 station = selected_stations[0]
@@ -187,7 +202,7 @@ while True:  # main game loop
             if event.button == 1:
                 mouse_pos = pygame.mouse.get_pos()
                 clicked_on_station = None
-                for entity in controller.Controller.entities:
+                for entity in Controller.entities:
                     if type(entity) == Station and entity.sprite.collidepoint(mouse_pos):
                         clicked_on_station = entity
                         selected_stations.append(clicked_on_station)
@@ -198,7 +213,7 @@ while True:  # main game loop
                         tooltip["pos"] = mouse_pos
                         tooltip["time"] = 100
                     else:
-                        create_station(mouse_pos, MAINSURF, ctrl)
+                        create_station(mouse_pos)
                 else:
                     clicked_on_station.color = YELLOW
                     if len(selected_stations) == 2:
@@ -208,7 +223,7 @@ while True:  # main game loop
                 pass
             elif event.button == 3:
                 clear_selected_stations(selected_stations)
-    if ctrl.get_money() <= BANKRUPT_AMOUNT:
+    if Controller.instance.currentMoney <= BANKRUPT_AMOUNT:
                 break
 while True:
     end_screen.draw_end_screen(MAINSURF)

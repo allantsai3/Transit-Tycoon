@@ -2,6 +2,7 @@ import pygame
 from math import sin, cos, pi, atan2, hypot
 from const import *
 import random
+import controller
 
 def dist(destination, origin):
     return hypot(destination[0] - origin[0], destination[1] - origin[1])
@@ -15,7 +16,7 @@ class Track:
         self.color = BLACK
         self.surface = surface
     
-    def tick(self, controller):
+    def tick(self):
         pass
     
     def draw(self):
@@ -25,7 +26,6 @@ class Track:
         point_list.insert(0, (self.start_station.x, self.start_station.y))
         point_list.append((self.end_station.x, self.end_station.y))
         pygame.draw.lines(self.surface, self.color, False, point_list)
-
 
 class Station:
     
@@ -54,18 +54,16 @@ class Station:
     def send(self, train, track):
         train.travel_track(track)
     
-    def receive(self, train, controller):
+    def receive(self, train):
         money_delta = train.train_pop * INCOME_RATE
         train.train_pop = 0
         self.pop = train.pickup(self.pop)
-        controller.addMoney(money_delta)
+        controller.Controller.addMoney(money_delta)
         train.wait_time = FPS
         random_track = random.choice(self.tracks)
         self.send(train, random_track)
         if money_delta > 0:
             self.moneyMessage = [str(money_delta), 25]
-
-
 
     def draw(self):
         self.sprite.center = (self.x, self.y)
@@ -92,7 +90,7 @@ class Station:
             self.moneyMessage[1] -= 1
 
     
-    def tick(self, controller):
+    def tick(self):
         self.pop_countdown -= self.populate_rate
         if self.pop_countdown <= 0:
             self.pop += 1
@@ -178,7 +176,8 @@ class Train(pygame.sprite.Sprite):
         text_surf = self.font.render("Passenger: {}/{}".format(self.train_pop, self.max_capacity), True, (BLACK))
         self.surface.blit(text_surf, (self.x, self.y + 40))
         
-    def tick(self, controller):
+    def tick(self):
+        ctrlr = controller.Controller.instance
         if self.wait_time >= 0:
             self.wait_time -= 1
             self.speed = 0
@@ -218,7 +217,7 @@ class Train(pygame.sprite.Sprite):
                     self.destination = self.track.breakpoints[self.break_point_index]
             else: # if at end station
                 self.break_point_index = 0
-                self.track.end_station.receive(self, controller)
+                self.track.end_station.receive(self)
 
 class Cloud():
     def __init__(self, surface):
@@ -236,7 +235,7 @@ class Cloud():
         else:
             self.surface.blit(self.img, self.rect)
 
-    def tick(self, controller):
+    def tick(self):
         self.rect.center = (self.x, self.y)
         self.x += self.velocity
 
