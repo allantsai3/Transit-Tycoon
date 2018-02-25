@@ -5,6 +5,10 @@ from random import randint
 from pygame.locals import *
 from const import *
 
+from game_objects.train import Train
+from game_objects.station import Station
+from game_objects.cloud import Cloud
+
 
 class Controller():
     instance = None
@@ -51,13 +55,13 @@ class Controller():
         legend_font = pygame.font.SysFont(None, 25)
         all_routes = set()
         for entity in Controller.entities:
-            if type(entity) == game_objects.Station:
+            if type(entity) == Station:
                 for route in entity.tracks:
                     all_routes.add(route)
 
         #randomized cloud generation
         if randint(0, 200) == 0:
-            cloud1 = game_objects.Cloud(Controller.surface)
+            cloud1 = Cloud(Controller.surface)
             Controller.entities.append(cloud1)
 
 

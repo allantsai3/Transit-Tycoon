@@ -3,9 +3,12 @@ from controller import Controller
 from const import *
 import start_screen
 import end_screen
-from game_objects import *
 from pygame.locals import *
 import random
+
+from game_objects.train import Train
+from game_objects.station import Station
+from game_objects.track import Track
 
 pygame.init()
 pygame.mixer.init()
@@ -92,13 +95,11 @@ if map_choice == "london":
     station1.addTrack(track5)
 
     train1 = Train(station1, MAINSURF)
-    station1.receive(train1, Controller.instance
-                     )
+    station1.receive(train1)
     Controller.instance.entities.append(train1)
 
     train2 = Train(station3, MAINSURF)
-    station3.receive(train2, Controller.instance
-                     )
+    station3.receive(train2)
 
     Controller.instance.entities.append(train2)
 
